@@ -1,20 +1,20 @@
 install:
-	pnpm install
+	corepack pnpm install
 
 build:
-	pnpm build
+	corepack pnpm build
 
 dev:
-	pnpm dev
+	corepack pnpm dev
 
 test:
-	pnpm test
+	corepack pnpm test
 
 test-e2e:
-	pnpm test:e2e
+	corepack pnpm test:e2e
 
 lint:
-	pnpm lint
+	corepack pnpm lint
 
 format:
-	pnpm format:write
+	corepack pnpm format:write

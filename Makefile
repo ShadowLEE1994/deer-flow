@@ -72,7 +72,7 @@ install:
 	@echo "Installing backend dependencies..."
 	@cd backend && uv sync
 	@echo "Installing frontend dependencies..."
-	@cd frontend && pnpm install
+	@cd frontend && corepack pnpm install
 	@echo "✓ All dependencies installed"
 	@echo ""
 	@echo "=========================================="
