@@ -19,7 +19,7 @@ import asyncio
 import logging
 from typing import Any, Literal
 
-from deerflow.runtime.serialization import is_intermediate_messages_chunk, serialize
+from deerflow.runtime.serialization import serialize
 from deerflow.runtime.stream_bridge import StreamBridge
 
 from .manager import RunManager, RunRecord
@@ -29,18 +29,6 @@ logger = logging.getLogger(__name__)
 
 # Valid stream_mode values for LangGraph's graph.astream()
 _VALID_LG_MODES = {"values", "updates", "checkpoints", "tasks", "debug", "messages", "custom"}
-
-
-def _should_skip_chunk(chunk: Any, mode: str, *, filter_intermediate_steps: bool) -> bool:
-    """Return True if this chunk should be suppressed from the SSE bridge.
-
-    Only applies to ``messages`` stream mode when *filter_intermediate_steps*
-    is enabled.  Delegates the actual detection to
-    :func:`~deerflow.runtime.serialization.is_intermediate_messages_chunk`.
-    """
-    if not filter_intermediate_steps or mode != "messages":
-        return False
-    return isinstance(chunk, tuple) and len(chunk) == 2 and is_intermediate_messages_chunk(chunk[0])
 
 
 async def run_agent(
@@ -55,9 +43,6 @@ async def run_agent(
     config: dict,
     stream_modes: list[str] | None = None,
     stream_subgraphs: bool = False,
-    filter_subagent_messages: bool = False,
-    filter_thinking: bool = False,
-    filter_intermediate_steps: bool = False,
     interrupt_before: list[str] | Literal["*"] | None = None,
     interrupt_after: list[str] | Literal["*"] | None = None,
 ) -> None:
@@ -161,10 +146,8 @@ async def run_agent(
                 if record.abort_event.is_set():
                     logger.info("Run %s abort requested — stopping", run_id)
                     break
-                if _should_skip_chunk(chunk, single_mode, filter_intermediate_steps=filter_intermediate_steps):
-                    continue
                 sse_event = _lg_mode_to_sse_event(single_mode)
-                await bridge.publish(run_id, sse_event, serialize(chunk, mode=single_mode, filter_thinking=filter_thinking, filter_intermediate_steps=filter_intermediate_steps))
+                await bridge.publish(run_id, sse_event, serialize(chunk, mode=single_mode))
         else:
             # Multiple modes or subgraphs: astream yields tuples
             async for item in agent.astream(
@@ -177,28 +160,12 @@ async def run_agent(
                     logger.info("Run %s abort requested — stopping", run_id)
                     break
 
-                # When filter_subagent_messages is enabled, skip events from
-                # non-root subgraph namespaces (subagent events have a non-empty
-                # namespace tuple as the first element of the 3-tuple).
-                if filter_subagent_messages and stream_subgraphs:
-                    if isinstance(item, tuple) and len(item) == 3:
-                        ns, raw_mode, raw_chunk = item
-                        if ns:  # non-empty namespace = subagent event
-                            continue
-                        mode, chunk = str(raw_mode), raw_chunk
-                    else:
-                        mode, chunk = _unpack_stream_item(item, lg_modes, stream_subgraphs)
-                else:
-                    mode, chunk = _unpack_stream_item(item, lg_modes, stream_subgraphs)
-
+                mode, chunk = _unpack_stream_item(item, lg_modes, stream_subgraphs)
                 if mode is None:
                     continue
 
-                if _should_skip_chunk(chunk, mode, filter_intermediate_steps=filter_intermediate_steps):
-                    continue
-
                 sse_event = _lg_mode_to_sse_event(mode)
-                await bridge.publish(run_id, sse_event, serialize(chunk, mode=mode, filter_thinking=filter_thinking, filter_intermediate_steps=filter_intermediate_steps))
+                await bridge.publish(run_id, sse_event, serialize(chunk, mode=mode))
 
         # 8. Final status
         if record.abort_event.is_set():

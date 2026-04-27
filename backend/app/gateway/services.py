@@ -318,9 +318,6 @@ async def start_run(
             config=config,
             stream_modes=stream_modes,
             stream_subgraphs=body.stream_subgraphs,
-            filter_subagent_messages=getattr(body, "filter_subagent_messages", False),
-            filter_thinking=getattr(body, "filter_thinking", False),
-            filter_intermediate_steps=getattr(body, "filter_intermediate_steps", False),
             interrupt_before=body.interrupt_before,
             interrupt_after=body.interrupt_after,
         )
