@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 
 import { getAPIClient } from "../api";
-import { getBackendBaseURL } from "../config";
+import { getBackendBaseURL, shouldFilterSubagentMessages } from "../config";
 import { useI18n } from "../i18n/hooks";
 import type { FileInMessage } from "../messages/utils";
 import type { LocalSettings } from "../settings";
@@ -209,7 +209,7 @@ export function useThreadStream({
       ? () => runMetadataStorageRef.current!
       : false,
     fetchStateHistory: { limit: 1 },
-    filterSubagentMessages: true,
+    filterSubagentMessages: shouldFilterSubagentMessages(),
     onCreated(meta) {
       handleStreamStart(meta.thread_id);
       setOnStreamThreadId(meta.thread_id);

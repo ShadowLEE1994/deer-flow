@@ -38,3 +38,7 @@ export function getLangGraphBaseURL(isMock?: boolean) {
     return "http://localhost:2026/api/langgraph";
   }
 }
+
+export function shouldFilterSubagentMessages() {
+  return env.NEXT_PUBLIC_FILTER_SUBAGENT_MESSAGES !== "false";
+}
