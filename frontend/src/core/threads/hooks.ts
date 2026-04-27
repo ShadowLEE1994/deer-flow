@@ -209,6 +209,7 @@ export function useThreadStream({
       ? () => runMetadataStorageRef.current!
       : false,
     fetchStateHistory: { limit: 1 },
+    filterSubagentMessages: true,
     onCreated(meta) {
       handleStreamStart(meta.thread_id);
       setOnStreamThreadId(meta.thread_id);
